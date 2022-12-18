@@ -18,6 +18,7 @@ variable "LOC" {}
 variable "env_prefix" {}
 variable "my_ip" {}
 variable "public_key_location" {}
+variable "private_key_location" {}
 
 # Create a resource group
 resource "azurerm_resource_group" "rg" {
@@ -29,7 +30,7 @@ resource "azurerm_ssh_public_key" "ssh-key" {
   name                = "Azssh-key"
   resource_group_name = azurerm_resource_group.rg.name
   location            = var.LOC
-  public_key          = "${file(var.public_key_location)}"
+  public_key          = file(var.public_key_location)
 }
 
 resource "azurerm_virtual_network" "myapp-vn" {
@@ -155,7 +156,30 @@ resource "azurerm_linux_virtual_machine" "myapp-server" {
   size                  = "Standard_D2s_v3"
   admin_username        = "adminuser"
   network_interface_ids = [azurerm_network_interface.myapp-ntc.id]
-  custom_data = filebase64("azure-user-data.sh")
+  #custom_data           = filebase64("azure-user-data.sh")
+    connection {
+    type = "ssh"
+    host = self.public_ip_address
+    user = "adminuser"
+    private_key = file(var.private_key_location)
+  }
+
+  provisioner "file" {
+    source = "azure-user-data.sh"
+    destination = "/home/adminuser/azureBash.sh"
+  }
+
+  provisioner "remote-exec" {
+    /*inline = [
+      "mkdir newdir"
+    ]*/
+    script = filebase64("azureBash.sh")
+  }
+
+  provisioner "local-exec" {
+    command = "echo ${self.public_ip_address} > output.txt"
+    
+  }
 
   admin_ssh_key {
     username   = "adminuser"
@@ -174,5 +198,4 @@ resource "azurerm_linux_virtual_machine" "myapp-server" {
     version   = "latest"
   }
 }
-
 
