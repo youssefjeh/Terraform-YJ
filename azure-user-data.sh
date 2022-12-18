@@ -17,4 +17,4 @@ sudo docker run hello-world
 sudo groupadd docker
 sudo usermod -aG docker adminuser
 sudo systemctl enable docker
-docker run -p 8080:80 nginx
+sudo docker run -p 8080:80 nginx
